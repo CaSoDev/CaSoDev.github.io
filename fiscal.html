@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jangadeiro - Fiscal</title>
+    <meta name="theme-color" content="#1e3a8a">
+    <link rel="manifest" href="/manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { primary: '#1e40af', secondary: '#3b82f6', accent: '#f59e0b' }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="css/style.css?v=20260612">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .signature-canvas {
+            touch-action: none;
+            cursor: crosshair;
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            background: #f9fafb;
+            width: 100%;
+            height: 160px;
+        }
+        .signature-canvas.signed {
+            border-color: #1e40af;
+            border-style: solid;
+            background: #fff;
+        }
+        .tipo-radio-label input[type="radio"]:checked + span {
+            background: #1e40af;
+            color: white;
+            border-color: #1e40af;
+        }
+        .item-nok { background: #fff1f2; border-color: #fda4af; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .photo-thumb {
+            width: 72px;
+            height: 72px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans h-screen flex overflow-hidden">
+    <div class="w-full h-full bg-gray-50 flex flex-col overflow-hidden relative">
+        <!-- Header -->
+        <header class="h-14 bg-primary shadow-md flex items-center justify-between px-4 z-20 text-white flex-shrink-0">
+        <div class="flex items-center gap-3">
+            <img src="img/logo.png" alt="Jangadeiro" class="h-8 w-auto">
+            <div>
+                <h1 class="text-base font-bold leading-none">Painel do Fiscal</h1>
+                <p class="text-xs text-blue-200" id="user-greeting"></p>
+            </div>
+        </div>
+        <button onclick="Auth.logout()" class="text-white hover:text-gray-200 p-2" title="Sair">
+            <i class="fas fa-sign-out-alt text-lg"></i>
+        </button>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="flex-1 overflow-y-auto p-4 md:p-8 relative pb-24">
+        <div class="max-w-4xl mx-auto w-full">
+        <!-- Toast Container -->
+        <div id="toast-container" class="fixed top-16 right-4 w-full max-w-xs z-50 flex flex-col gap-2"></div>
+
+        <!-- VIEW: HISTÓRICO -->
+        <div id="view-inicio" class="view-section block fade-in">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Histórico de Checklists</h2>
+            <div id="lista-checklists" class="space-y-3">
+                <div class="text-center text-gray-400 py-10">
+                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                    <p class="text-sm">Carregando...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: NOVO CHECKLIST -->
+        <div id="view-novo" class="view-section hidden fade-in">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Novo Checklist</h2>
+
+            <form id="form-checklist" class="space-y-5" onsubmit="return false;">
+
+                <!-- Seção 1: Dados Gerais -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="font-semibold text-base text-gray-800 border-b border-gray-100 pb-2 mb-4">
+                        <i class="fas fa-info-circle text-primary mr-2"></i>Dados da Vistoria
+                    </h3>
+                    <div class="space-y-4">
+                        <!-- Tipo Abertura / Fechamento -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Vistoria</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="tipo-radio-label cursor-pointer">
+                                    <input type="radio" name="tipo" value="abertura" class="hidden" required>
+                                    <span class="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-gray-200 transition-all text-gray-600 font-semibold text-sm">
+                                        <i class="fas fa-sun text-lg mb-1"></i> Abertura
+                                    </span>
+                                </label>
+                                <label class="tipo-radio-label cursor-pointer">
+                                    <input type="radio" name="tipo" value="fechamento" class="hidden">
+                                    <span class="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-gray-200 transition-all text-gray-600 font-semibold text-sm">
+                                        <i class="fas fa-moon text-lg mb-1"></i> Fechamento
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="veiculo_id" class="block text-sm font-medium text-gray-700 mb-1">Veículo</label>
+                            <select id="veiculo_id" name="veiculo_id" required class="block w-full rounded-xl border border-gray-200 bg-gray-50 py-3 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary text-sm">
+                                <option value="">Selecione o veículo...</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="motorista_id" class="block text-sm font-medium text-gray-700 mb-1">Motorista</label>
+                            <select id="motorista_id" name="motorista_id" required class="block w-full rounded-xl border border-gray-200 bg-gray-50 py-3 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary text-sm">
+                                <option value="">Selecione o motorista...</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="km_registrado" class="block text-sm font-medium text-gray-700 mb-1">KM Atual no Painel</label>
+                            <input type="number" id="km_registrado" name="km_registrado" required class="block w-full rounded-xl border border-gray-200 bg-gray-50 py-3 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary text-sm" placeholder="Ex: 15200">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção 2: Itens de Inspeção -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="font-semibold text-base text-gray-800 border-b border-gray-100 pb-2 mb-4">
+                        <i class="fas fa-list-check text-primary mr-2"></i>Itens de Inspeção
+                    </h3>
+                    <p class="text-xs text-gray-400 mb-4">✅ = Conforme &nbsp;|&nbsp; ❌ = Não conforme (requer observação)</p>
+                    <div id="lista-itens" class="space-y-3"></div>
+                </div>
+
+                <!-- Seção 3: Fotos do Veículo -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="font-semibold text-base text-gray-800 border-b border-gray-100 pb-2 mb-4">
+                        <i class="fas fa-camera text-primary mr-2"></i>Fotos do Veículo
+                    </h3>
+                    <p class="text-xs text-gray-400 mb-4">Fotografe os 4 lados do veículo e quaisquer avarias encontradas.</p>
+
+                    <!-- Input oculto para câmera -->
+                    <input type="file" id="input-foto" name="fotos[]" accept="image/*" capture="environment" multiple class="hidden" onchange="Fiscal.adicionarFotos(this)">
+
+                    <!-- Grade de thumbnails + botão adicionar -->
+                    <div id="fotos-grid" class="flex flex-wrap gap-3 items-center">
+                        <button type="button" onclick="document.getElementById('input-foto').click()" id="btn-add-foto"
+                            class="w-16 h-16 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 text-gray-400 hover:border-primary hover:text-primary transition-colors text-xs gap-1">
+                            <i class="fas fa-camera text-xl"></i>
+                            <span>Foto</span>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-3" id="fotos-count">0 foto(s) adicionada(s)</p>
+                </div>
+
+                <!-- Seção 4: Assinaturas -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="font-semibold text-base text-gray-800 border-b border-gray-100 pb-2 mb-4">
+                        <i class="fas fa-signature text-primary mr-2"></i>Assinaturas
+                    </h3>
+
+                    <!-- Assinatura do Fiscal -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-gray-700">Assinatura do Fiscal</label>
+                            <button type="button" onclick="Fiscal.limparAssinatura('canvas-fiscal')" class="text-xs text-red-500 hover:text-red-700 font-medium">
+                                <i class="fas fa-eraser mr-1"></i>Limpar
+                            </button>
+                        </div>
+                        <canvas id="canvas-fiscal" class="signature-canvas" width="600" height="160"></canvas>
+                        <p class="text-xs text-gray-400 mt-1">Assine com o dedo ou mouse no espaço acima</p>
+                    </div>
+
+                    <!-- Assinatura do Motorista -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-gray-700">Assinatura do Motorista</label>
+                            <button type="button" onclick="Fiscal.limparAssinatura('canvas-motorista')" class="text-xs text-red-500 hover:text-red-700 font-medium">
+                                <i class="fas fa-eraser mr-1"></i>Limpar
+                            </button>
+                        </div>
+                        <canvas id="canvas-motorista" class="signature-canvas" width="600" height="160"></canvas>
+                        <p class="text-xs text-gray-400 mt-1">Assine com o dedo ou mouse no espaço acima</p>
+                    </div>
+                </div>
+
+                <!-- Botão Registrar -->
+                <button type="button" onclick="Fiscal.salvarChecklist()" id="btn-salvar"
+                    class="w-full flex justify-center items-center py-4 px-4 rounded-xl shadow-md text-base font-bold text-white bg-primary hover:bg-blue-800 transition-colors gap-2">
+                    <i class="fas fa-save"></i> Registrar Checklist
+                </button>
+            </form>
+        </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="w-full h-16 bg-white border-t border-gray-200 flex z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] flex-shrink-0">
+        <button data-view="inicio" class="nav-tab flex-1 flex flex-col items-center justify-center text-primary bg-blue-50 transition-colors">
+            <i class="fas fa-history text-xl mb-0.5"></i>
+            <span class="text-xs font-semibold">Histórico</span>
+        </button>
+        <button data-view="novo" class="nav-tab flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-primary transition-colors">
+            <i class="fas fa-plus-circle text-xl mb-0.5"></i>
+            <span class="text-xs font-semibold">Novo</span>
+        </button>
+    </nav>
+</div>
+
+    <!-- Modal de Observação (Bottom Sheet) -->
+    <div id="modal-obs" class="fixed inset-0 z-50 hidden">
+        <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm" onclick="Fiscal.fecharModalObs()"></div>
+        <div class="fixed bottom-0 w-full bg-white rounded-t-2xl shadow-2xl p-6 pb-8">
+            <div class="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
+            <h3 class="text-base font-bold text-gray-900 mb-1">Registrar Não Conformidade</h3>
+            <p class="text-sm text-gray-500 mb-3" id="modal-obs-item-name"></p>
+            <input type="hidden" id="obs-item-index">
+            <textarea id="obs-text" rows="3" class="w-full border border-gray-200 rounded-xl p-3 text-sm text-gray-700 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder="Descreva o problema encontrado..."></textarea>
+            <div class="flex gap-3 mt-4">
+                <button onclick="Fiscal.salvarObs()" class="flex-1 bg-primary text-white py-3 rounded-xl font-bold text-sm">Confirmar</button>
+                <button onclick="Fiscal.cancelarNaoConformidade()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold text-sm">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js?v=20260612"></script>
+    <script src="js/fiscal.js?v=20260612"></script>
+</body>
+</html>

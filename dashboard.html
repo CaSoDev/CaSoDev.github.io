@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jangadeiro - Dashboard</title>
+    
+    <meta name="theme-color" content="#1e3a8a">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS (CDN para dev, será feito cache no SW) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { primary: '#1e40af', secondary: '#3b82f6', accent: '#f59e0b' }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="css/style.css?v=20260612">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for reports -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-md hidden md:flex flex-col z-20">
+        <div class="h-16 flex items-center justify-center border-b border-gray-200">
+            <img src="img/logo.png" alt="Jangadeiro" class="h-10 w-auto">
+        </div>
+        <nav class="flex-1 overflow-y-auto py-4">
+            <ul class="space-y-1">
+                <li>
+                    <a href="#" data-view="dashboard" class="nav-link block px-6 py-3 text-gray-700 bg-blue-50 border-r-4 border-primary font-medium transition-colors">
+                        <i class="fas fa-home w-5 text-center mr-2"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-view="veiculos" class="nav-link block px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors border-r-4 border-transparent">
+                        <i class="fas fa-truck w-5 text-center mr-2"></i> Veículos
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-view="usuarios" class="nav-link block px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors border-r-4 border-transparent">
+                        <i class="fas fa-users w-5 text-center mr-2"></i> Usuários
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-view="checklists" class="nav-link block px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors border-r-4 border-transparent">
+                        <i class="fas fa-clipboard-list w-5 text-center mr-2"></i> Checklists
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-view="abastecimentos" class="nav-link block px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors border-r-4 border-transparent">
+                        <i class="fas fa-gas-pump w-5 text-center mr-2"></i> Abastecimentos
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-view="cartoes-frota" class="nav-link block px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors border-r-4 border-transparent">
+                        <i class="fas fa-credit-card w-5 text-center mr-2"></i> Cartões Frota
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-view="export" class="nav-link block px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors border-r-4 border-transparent">
+                        <i class="fas fa-file-export w-5 text-center mr-2"></i> Exportação
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="p-4 border-t border-gray-200">
+            <button onclick="Auth.logout()" class="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 rounded transition-colors font-medium">
+                <i class="fas fa-sign-out-alt mr-2"></i> Sair
+            </button>
+        </div>
+    </aside>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-10 hidden transition-opacity lg:hidden"></div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col relative w-full">
+        <!-- Header -->
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-4 sm:px-6 z-10">
+            <div class="flex items-center gap-3">
+                <button class="md:hidden text-gray-500 hover:text-gray-700" id="btn-mobile-menu">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <img src="img/logo.png" alt="Jangadeiro" class="h-8 w-auto md:hidden">
+            </div>
+            <div class="flex items-center ml-auto">
+                <span id="user-name" class="text-sm font-medium text-gray-700 mr-3">Carregando...</span>
+                <div class="h-9 w-9 rounded-full bg-primary text-white flex items-center justify-center font-bold shadow-sm">
+                    U
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Area -->
+        <main id="main-content" class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6 relative">
+            
+            <!-- Toast Container -->
+            <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2"></div>
+
+            <!-- VIEW: DASHBOARD -->
+            <div id="view-dashboard" class="view-section max-w-7xl mx-auto block">
+                <!-- Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 text-primary mr-4">
+                            <i class="fas fa-truck text-xl"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium text-gray-500">Veículos Ativos</div>
+                            <div class="mt-1 text-2xl font-bold text-gray-900" id="dash-veiculos-count">0</div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+                            <i class="fas fa-clipboard-check text-xl"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium text-gray-500">Checklists Hoje</div>
+                            <div class="mt-1 text-2xl font-bold text-gray-900" id="dash-checklists-hoje">0</div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
+                        <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                            <i class="fas fa-users text-xl"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium text-gray-500">Usuários Ativos</div>
+                            <div class="mt-1 text-2xl font-bold text-gray-900" id="dash-usuarios-count">0</div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
+                        <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">
+                            <i class="fas fa-gas-pump text-xl"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium text-gray-500">Abastecimentos Mês</div>
+                            <div class="mt-1 text-2xl font-bold text-gray-900" id="dash-abast-total">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Graficos -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 mt-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <i class="fas fa-chart-bar text-primary"></i> KM Rodado por Motorista
+                        </h3>
+                        <div class="h-64 relative">
+                            <canvas id="chart-km-motorista"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <i class="fas fa-chart-pie text-accent"></i> Consumo de Combustível por Tipo
+                        </h3>
+                        <div class="h-64 relative flex items-center justify-center">
+                            <canvas id="chart-combustivel"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Relatorio detalhado de consumo por veiculo e motoristas -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+                        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                            <h3 class="text-base font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-gas-pump text-red-500"></i> Consumo por Veículo
+                            </h3>
+                        </div>
+                        <div class="overflow-x-auto max-h-80 overflow-y-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50 sticky top-0">
+                                    <tr>
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Veículo</th>
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Total Abast.</th>
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Litros</th>
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Total Gasto</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-consumo-veiculo-body" class="bg-white divide-y divide-gray-200">
+                                    <tr><td colspan="4" class="px-4 py-4 text-center text-xs text-gray-400">Carregando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+                        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                            <h3 class="text-base font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-road text-teal-600"></i> KM por Motorista
+                            </h3>
+                        </div>
+                        <div class="overflow-x-auto max-h-80 overflow-y-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50 sticky top-0">
+                                    <tr>
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Motorista</th>
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Checklists</th>
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500">KM Estimado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-km-motorista-body" class="bg-white divide-y divide-gray-200">
+                                    <tr><td colspan="3" class="px-4 py-4 text-center text-xs text-gray-400">Carregando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Atividades Recentes -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                        <h3 class="text-base font-bold text-gray-800 flex items-center gap-2">
+                            <i class="fas fa-history text-gray-500"></i> Atividades Recentes (Vistorias e Abastecimentos)
+                        </h3>
+                    </div>
+                    <div id="recent-activities-list" class="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                        <div class="p-6 text-center text-gray-500">
+                            <i class="fas fa-inbox text-4xl mb-3 text-gray-300"></i>
+                            <p>Carregando atividades...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: VEICULOS -->
+            <div id="view-veiculos" class="view-section max-w-7xl mx-auto hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h2 class="text-2xl font-semibold text-gray-800">Gestão de Veículos</h2>
+                    <button onclick="Dashboard.openModalVeiculo()" class="bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow-sm transition-colors flex items-center text-sm font-medium">
+                        <i class="fas fa-plus mr-2"></i> Novo Veículo
+                    </button>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Placa</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Veículo</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KM Atual</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Combustível</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-veiculos-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Preenchido via JS -->
+                                <tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">Carregando veículos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: USUARIOS -->
+            <div id="view-usuarios" class="view-section max-w-7xl mx-auto hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h2 class="text-2xl font-semibold text-gray-800">Gestão de Usuários</h2>
+                    <button onclick="Dashboard.openModalUsuario()" class="bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow-sm transition-colors flex items-center text-sm font-medium">
+                        <i class="fas fa-plus mr-2"></i> Novo Usuário
+                    </button>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CPF / E-mail</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Perfil</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-usuarios-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Preenchido via JS -->
+                                <tr><td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">Carregando usuários...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: CHECKLISTS -->
+            <div id="view-checklists" class="view-section max-w-7xl mx-auto hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h2 class="text-2xl font-semibold text-gray-800">Checklists Realizados</h2>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Veículo</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motorista</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fiscal</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data / Hora</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-checklists-body" class="bg-white divide-y divide-gray-200">
+                                <tr><td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">Carregando checklists...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: ABASTE CIMENTOS -->
+            <div id="view-abastecimentos" class="view-section max-w-7xl mx-auto hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h2 class="text-2xl font-semibold text-gray-800">Abastecimentos Registrados</h2>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Veículo</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Combustível</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motorista</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Litros</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor Total</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data / Hora</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Comprovantes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-abastecimentos-body" class="bg-white divide-y divide-gray-200">
+                                <tr><td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">Carregando abastecimentos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: CARTOES FROTA -->
+            <div id="view-cartoes-frota" class="view-section max-w-7xl mx-auto hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-semibold text-gray-800">Cartões de Frota</h2>
+                        <p class="text-sm text-gray-500 mt-1">Cadastre vários cartões para o mesmo veículo.</p>
+                    </div>
+                    <button onclick="Dashboard.openModalCartaoFrota()" class="bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow-sm transition-colors flex items-center text-sm font-medium">
+                        <i class="fas fa-plus mr-2"></i> Novo Cartão
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Veículo</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número do Cartão</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apelido</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bandeira</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-cartoes-frota-body" class="bg-white divide-y divide-gray-200">
+                                <tr><td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">Carregando cartões...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: EXPORTACAO -->
+            <div id="view-export" class="view-section max-w-7xl mx-auto hidden">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mb-6">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                        <div>
+                            <p class="text-sm font-semibold text-primary uppercase tracking-wider">Admin</p>
+                            <h2 class="text-3xl font-bold text-gray-900 mt-1">Exportação de dados</h2>
+                            <p class="text-sm text-gray-500 mt-2">Escolha a base, aplique filtros e gere CSV ou PDF sem sair do dashboard.</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <button id="btn-refresh-export" class="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-blue-800 transition-colors">
+                                <i class="fas fa-rotate-right mr-2"></i> Atualizar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Base para exportar</label>
+                            <select id="export-table" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                                <option value="veiculos">Veículos</option>
+                                <option value="usuarios">Usuários</option>
+                                <option value="checklists">Checklists</option>
+                                <option value="abastecimentos">Abastecimentos</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Busca rápida</label>
+                            <input id="export-search" type="search" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Digite para filtrar">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Perfil</label>
+                            <select id="export-profile" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                                <option value="">Todos</option>
+                                <option value="admin">Admin</option>
+                                <option value="fiscal">Fiscal</option>
+                                <option value="motorista">Motorista</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Data inicial</label>
+                                <input id="export-date-from" type="date" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Data final</label>
+                                <input id="export-date-to" type="date" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <button id="btn-export-csv" class="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors">
+                                <i class="fas fa-file-csv mr-2"></i> CSV
+                            </button>
+                            <button id="btn-export-pdf" class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-black transition-colors">
+                                <i class="fas fa-file-pdf mr-2"></i> PDF
+                            </button>
+                        </div>
+
+                        <button id="btn-clear-export-filters" class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-broom mr-2"></i> Limpar filtros
+                        </button>
+                    </div>
+
+                    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                            <h2 class="text-base font-bold text-gray-800">Prévia dos dados</h2>
+                            <span id="export-count" class="text-sm text-gray-500">0 registros</span>
+                        </div>
+                        <div class="overflow-auto max-h-[70vh]">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead id="export-table-head" class="bg-white sticky top-0 shadow-sm"></thead>
+                                <tbody id="export-table-body" class="bg-white divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- MODAL: USUARIO -->
+    <div id="modal-usuario" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity backdrop-blur-sm"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4 border-b border-gray-100">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-semibold leading-6 text-gray-900" id="modal-usuario-title">Novo Usuário</h3>
+                            <button onclick="Dashboard.closeModal('modal-usuario')" class="text-gray-400 hover:text-gray-500">
+                                <i class="fas fa-times text-lg"></i>
+                            </button>
+                        </div>
+                        <form id="form-usuario" class="space-y-4">
+                            <input type="hidden" id="usuario_id" name="id">
+                            <div>
+                                <label for="usuario_nome" class="block text-sm font-medium leading-6 text-gray-900">Nome Completo</label>
+                                <input type="text" name="nome" id="usuario_nome" required class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6">
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="usuario_cpf" class="block text-sm font-medium leading-6 text-gray-900">CPF</label>
+                                    <input type="text" name="cpf" id="usuario_cpf" required class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6" placeholder="000.000.000-00">
+                                </div>
+                                <div>
+                                    <label for="usuario_telefone" class="block text-sm font-medium leading-6 text-gray-900">Telefone</label>
+                                    <input type="text" name="telefone" id="usuario_telefone" class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="usuario_email" class="block text-sm font-medium leading-6 text-gray-900">E-mail</label>
+                                <input type="email" name="email" id="usuario_email" required class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6">
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="usuario_senha" class="block text-sm font-medium leading-6 text-gray-900">Senha <span class="text-xs text-gray-500 font-normal" id="senha-hint"></span></label>
+                                    <input type="password" name="senha" id="usuario_senha" class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6">
+                                </div>
+                                <div>
+                                    <label for="usuario_perfil" class="block text-sm font-medium leading-6 text-gray-900">Perfil</label>
+                                    <select id="usuario_perfil" name="perfil" required class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6">
+                                        <option value="motorista">Motorista</option>
+                                        <option value="fiscal">Fiscal</option>
+                                        <option value="admin">Administrador</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-gray-100">
+                        <button type="button" onclick="Dashboard.saveUsuario()" class="inline-flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-800 sm:ml-3 sm:w-auto transition-colors">Salvar</button>
+                        <button type="button" onclick="Dashboard.closeModal('modal-usuario')" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto transition-colors">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: VEICULO -->
+    <div id="modal-veiculo" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity backdrop-blur-sm"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4 border-b border-gray-100">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-semibold leading-6 text-gray-900" id="modal-veiculo-title">Novo Veículo</h3>
+                            <button onclick="Dashboard.closeModal('modal-veiculo')" class="text-gray-400 hover:text-gray-500">
+                                <i class="fas fa-times text-lg"></i>
+                            </button>
+                        </div>
+                        <form id="form-veiculo" class="space-y-4">
+                            <input type="hidden" id="veiculo_id" name="id">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="veiculo_placa" class="block text-sm font-medium leading-6 text-gray-900">Placa</label>
+                                    <input type="text" name="placa" id="veiculo_placa" required class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6" style="text-transform: uppercase;">
+                                </div>
+                                <div>
+                                    <label for="veiculo_ano" class="block text-sm font-medium leading-6 text-gray-900">Ano</label>
+                                    <input type="number" name="ano" id="veiculo_ano" required class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="veiculo_marca" class="block text-sm font-medium leading-6 text-gray-900">Marca</label>
+                                    <input type="text" name="marca" id="veiculo_marca" required class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6">
+                                </div>
+                                <div>
+                                    <label for="veiculo_modelo" class="block text-sm font-medium leading-6 text-gray-900">Modelo</label>
+                                    <input type="text" name="modelo" id="veiculo_modelo" required class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="veiculo_cor" class="block text-sm font-medium leading-6 text-gray-900">Cor</label>
+                                    <input type="text" name="cor" id="veiculo_cor" class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6">
+                                </div>
+                                <div>
+                                    <label for="veiculo_tipo_combustivel" class="block text-sm font-medium leading-6 text-gray-900">Combustível</label>
+                                    <select id="veiculo_tipo_combustivel" name="tipo_combustivel" required class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6">
+                                        <option value="Gasolina">Gasolina</option>
+                                        <option value="Etanol">Etanol</option>
+                                        <option value="Diesel S10">Diesel S10</option>
+                                        <option value="Diesel Comum">Diesel Comum</option>
+                                        <option value="GNV">GNV</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="veiculo_km_atual" class="block text-sm font-medium leading-6 text-gray-900">KM Atual</label>
+                                    <input type="number" name="km_atual" id="veiculo_km_atual" required class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6">
+                                </div>
+                                <div>
+                                    <label for="veiculo_proxima_troca" class="block text-sm font-medium leading-6 text-gray-900">Próx. Troca Óleo (KM)</label>
+                                    <input type="number" name="proxima_troca_oleo" id="veiculo_proxima_troca" class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6">
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-gray-100">
+                        <button type="button" onclick="Dashboard.saveVeiculo()" class="inline-flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-800 sm:ml-3 sm:w-auto transition-colors">Salvar</button>
+                        <button type="button" onclick="Dashboard.closeModal('modal-veiculo')" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto transition-colors">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CARTAO FROTA -->
+    <div id="modal-cartao-frota" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity backdrop-blur-sm"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4 border-b border-gray-100">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-semibold leading-6 text-gray-900" id="modal-cartao-frota-title">Novo Cartão de Frota</h3>
+                            <button onclick="Dashboard.closeModal('modal-cartao-frota')" class="text-gray-400 hover:text-gray-500">
+                                <i class="fas fa-times text-lg"></i>
+                            </button>
+                        </div>
+                        <form id="form-cartao-frota" class="space-y-4">
+                            <input type="hidden" id="cartao_frota_id" name="id">
+                            <div>
+                                <label for="cartao_veiculo_id" class="block text-sm font-medium leading-6 text-gray-900">Veículo</label>
+                                <select id="cartao_veiculo_id" name="veiculo_id" required class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"></select>
+                            </div>
+                            <div>
+                                <label for="cartao_numero" class="block text-sm font-medium leading-6 text-gray-900">Número do Cartão</label>
+                                <input type="text" name="numero_cartao" id="cartao_numero" required class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6" placeholder="Ex: 1234 5678 9012 3456">
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="cartao_apelido" class="block text-sm font-medium leading-6 text-gray-900">Apelido</label>
+                                    <input type="text" name="apelido" id="cartao_apelido" class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6" placeholder="Ex: Principal / Reserva">
+                                </div>
+                                <div>
+                                    <label for="cartao_bandeira" class="block text-sm font-medium leading-6 text-gray-900">Bandeira</label>
+                                    <input type="text" name="bandeira" id="cartao_bandeira" class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6" placeholder="Ex: Mastercard">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="cartao_status" class="block text-sm font-medium leading-6 text-gray-900">Status</label>
+                                <select id="cartao_status" name="status" class="mt-1 block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6">
+                                    <option value="1">Ativo</option>
+                                    <option value="0">Inativo</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-gray-100">
+                        <button type="button" onclick="Dashboard.saveCartaoFrota()" class="inline-flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-800 sm:ml-3 sm:w-auto transition-colors">Salvar</button>
+                        <button type="button" onclick="Dashboard.closeModal('modal-cartao-frota')" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto transition-colors">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/api.js?v=20260612"></script>
+    <script src="js/dashboard.js?v=20260612"></script>
+    <script src="js/export.js?v=20260612"></script>
+</body>
+</html>

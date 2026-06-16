@@ -1,0 +1,21 @@
+/* Custom styles que não são cobertos pelo Tailwind CDN */
+
+/* Suavizar transições */
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Esconder scrollbar mas manter funcional (opcional, bom para PWA mobile) */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Efeito de click em botões */
+button:active {
+    transform: scale(0.98);
+}

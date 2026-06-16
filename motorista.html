@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jangadeiro - Motorista</title>
+    <meta name="theme-color" content="#1e3a8a">
+    <link rel="manifest" href="/manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary:  '#1e40af', // blue-800
+                        secondary:'#3b82f6', // blue-500
+                        accent:   '#f59e0b'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="css/style.css?v=20260612">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .nav-tab.active {
+            color: #1e40af;
+            background: #eff6ff;
+        }
+        .card-stat {
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+        }
+        .card-stat-2 {
+            background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+        }
+        .card-stat-3 {
+            background: linear-gradient(135deg, #b45309, #f59e0b);
+        }
+        .fade-in { animation: fadeIn .25s ease; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+        .photo-thumb {
+            width: 80px; height: 80px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 2px solid #e5e7eb;
+        }
+        .badge-abertura  { background:#dcfce7; color:#166534; }
+        .badge-fechamento { background:#f3e8ff; color:#6b21a8; }
+        .badge-conforme   { background:#dcfce7; color:#166534; }
+        .badge-nao_conforme { background:#fee2e2; color:#991b1b; }
+        input[type="number"]::-webkit-inner-spin-button { opacity: 0.5; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans h-screen flex overflow-hidden">
+    <div class="w-full h-full bg-gray-50 flex flex-col overflow-hidden relative">
+        <!-- Header -->
+        <header class="bg-primary text-white px-4 py-3 flex items-center justify-between z-20 flex-shrink-0 shadow-md">
+            <div class="flex items-center gap-3">
+                <img src="img/logo.png" alt="Jangadeiro" class="h-8 w-auto hidden sm:block">
+                <div class="w-9 h-9 rounded-full bg-white bg-opacity-20 flex items-center justify-center font-bold text-lg" id="avatar-letter">M</div>
+                <div>
+                    <p class="text-xs text-blue-200 leading-none">Painel do Motorista,</p>
+                    <p class="font-bold text-sm leading-snug" id="header-nome">Motorista</p>
+                </div>
+            </div>
+            <button onclick="Auth.logout()" class="text-teal-200 hover:text-white p-2" title="Sair">
+                <i class="fas fa-sign-out-alt text-lg"></i>
+            </button>
+        </header>
+
+        <!-- Main -->
+        <main class="flex-1 overflow-y-auto pb-24 md:p-8">
+        <div class="max-w-4xl mx-auto w-full">
+        <!-- Toast -->
+        <div id="toast-container" class="fixed top-16 right-4 w-full max-w-xs z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+        <!-- ====== TAB: INÍCIO ====== -->
+        <div id="view-inicio" class="view-section block p-4 fade-in">
+            <!-- Cards de resumo -->
+            <div class="grid grid-cols-3 gap-3 mb-5">
+                <div class="card-stat rounded-xl p-3 text-white text-center shadow-sm">
+                    <div class="text-xl font-bold" id="stat-km">—</div>
+                    <div class="text-xs text-blue-100 mt-0.5">KM Atual</div>
+                </div>
+                <div class="card-stat-2 rounded-xl p-3 text-white text-center shadow-sm">
+                    <div class="text-xl font-bold" id="stat-checklists">—</div>
+                    <div class="text-xs text-blue-100 mt-0.5">Checklists</div>
+                </div>
+                <div class="card-stat-3 rounded-xl p-3 text-white text-center shadow-sm">
+                    <div class="text-xl font-bold" id="stat-abast">—</div>
+                    <div class="text-xs text-amber-100 mt-0.5">Abastec.</div>
+                </div>
+            </div>
+
+            <!-- Último veículo usado -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Último Veículo</p>
+                <div id="ultimo-veiculo" class="text-center text-gray-400 text-sm py-2">
+                    <i class="fas fa-truck text-3xl mb-2 text-gray-200 block"></i>Nenhum registro
+                </div>
+            </div>
+
+            <!-- Ações rápidas -->
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Ações Rápidas</p>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="Motorista.switchView('abastecimento')" class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex flex-col items-center gap-2 text-center active:scale-95 transition-transform">
+                    <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
+                        <i class="fas fa-gas-pump text-xl text-amber-600"></i>
+                    </div>
+                    <span class="text-sm font-semibold text-gray-700">Registrar Abastecimento</span>
+                </button>
+                <button onclick="Motorista.switchView('checklists')" class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex flex-col items-center gap-2 text-center active:scale-95 transition-transform">
+                    <div class="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center">
+                        <i class="fas fa-clipboard-list text-xl text-teal-600"></i>
+                    </div>
+                    <span class="text-sm font-semibold text-gray-700">Ver Checklists</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ====== TAB: CHECKLISTS ====== -->
+        <div id="view-checklists" class="view-section hidden p-4 fade-in">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Meus Checklists</h2>
+            <div id="lista-checklists" class="space-y-3">
+                <div class="text-center text-gray-400 py-10">
+                    <i class="fas fa-spinner fa-spin text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== TAB: ABASTECIMENTO ====== -->
+        <div id="view-abastecimento" class="view-section hidden p-4 fade-in">
+            <h2 class="text-lg font-bold text-gray-800 mb-1">Novo Abastecimento</h2>
+            <p class="text-xs text-gray-400 mb-4">Preencha todos os dados e anexe a foto do cupom.</p>
+
+            <form id="form-abastecimento" class="space-y-4" onsubmit="return false;">
+
+                <!-- Veículo e Combustível -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-4">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Veículo</h3>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Veículo</label>
+                        <select id="abast-veiculo" name="veiculo_id" required class="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="">Selecione o veículo...</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Cartão da Frota</label>
+                        <select id="abast-cartao-frota" name="cartao_frota_id" required class="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary" disabled>
+                            <option value="">Selecione o veículo primeiro...</option>
+                        </select>
+                        <p id="abast-cartao-info" class="text-xs text-gray-400 mt-2">O cartão precisa pertencer ao veículo selecionado.</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">KM no Abastecimento</label>
+                            <input type="number" name="km_abastecimento" id="abast-km" required
+                                class="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                placeholder="Ex: 15500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Combustível</label>
+                            <select name="tipo_combustivel" id="abast-tipo-comb" required class="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                                <option value="">Selecione...</option>
+                                <option value="Gasolina">Gasolina</option>
+                                <option value="Etanol">Etanol</option>
+                                <option value="Diesel S10">Diesel S10</option>
+                                <option value="Diesel Comum">Diesel Comum</option>
+                                <option value="GNV">GNV</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Valores -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-4">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Valores</h3>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Litros</label>
+                            <input type="number" step="0.01" name="litros" id="abast-litros" required
+                                class="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                placeholder="0.00" oninput="Motorista.calcularTotal()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">R$/Litro</label>
+                            <input type="number" step="0.001" name="valor_litro" id="abast-valor-litro" required
+                                class="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                placeholder="0.00" oninput="Motorista.calcularTotal()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Total R$</label>
+                            <input type="number" step="0.01" name="valor_total" id="abast-valor-total" required
+                                class="w-full rounded-xl border border-gray-200 bg-teal-50 py-3 px-3 text-sm font-bold text-teal-800 focus:outline-none focus:ring-2 focus:ring-primary"
+                                placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fotos -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-4">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Fotos</h3>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Foto do Cupom Fiscal <span class="text-red-500">*</span>
+                        </label>
+                        <input type="file" id="foto-cupom" name="foto_cupom" accept="image/*" capture="environment" required
+                            class="hidden" onchange="Motorista.previewFoto(this, 'preview-cupom')">
+                        <div id="preview-cupom" onclick="document.getElementById('foto-cupom').click()"
+                            class="w-full h-32 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors text-gray-400 bg-gray-50 overflow-hidden">
+                            <i class="fas fa-receipt text-2xl mb-1"></i>
+                            <span class="text-xs">Toque para fotografar o cupom</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Foto da Bomba <span class="text-xs text-gray-400">(opcional)</span>
+                        </label>
+                        <input type="file" id="foto-bomba" name="foto_bomba" accept="image/*" capture="environment"
+                            class="hidden" onchange="Motorista.previewFoto(this, 'preview-bomba')">
+                        <div id="preview-bomba" onclick="document.getElementById('foto-bomba').click()"
+                            class="w-full h-28 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors text-gray-400 bg-gray-50 overflow-hidden">
+                            <i class="fas fa-gas-pump text-2xl mb-1"></i>
+                            <span class="text-xs">Toque para fotografar a bomba</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" id="btn-salvar-abast" onclick="Motorista.salvarAbastecimento()"
+                    class="w-full py-4 rounded-xl bg-primary text-white font-bold text-base shadow-md flex items-center justify-center gap-2 hover:bg-teal-800 transition-colors active:scale-95">
+                    <i class="fas fa-save"></i> Registrar Abastecimento
+                </button>
+            </form>
+        </div>
+
+        </div>
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav class="w-full h-16 bg-white border-t border-gray-200 flex z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] flex-shrink-0">
+        <button data-view="inicio" onclick="Motorista.switchView('inicio')"
+            class="nav-tab active flex-1 flex flex-col items-center justify-center transition-colors">
+            <i class="fas fa-home text-xl mb-0.5"></i>
+            <span class="text-xs font-semibold">Início</span>
+        </button>
+        <button data-view="checklists" onclick="Motorista.switchView('checklists')"
+            class="nav-tab flex-1 flex flex-col items-center justify-center text-gray-400 transition-colors">
+            <i class="fas fa-clipboard-list text-xl mb-0.5"></i>
+            <span class="text-xs font-semibold">Checklists</span>
+        </button>
+        <button data-view="abastecimento" onclick="Motorista.switchView('abastecimento')"
+            class="nav-tab flex-1 flex flex-col items-center justify-center text-gray-400 transition-colors">
+            <i class="fas fa-gas-pump text-xl mb-0.5"></i>
+            <span class="text-xs font-semibold">Abastec.</span>
+        </button>
+    </nav>
+</div>
+
+    <script src="js/api.js?v=20260612"></script>
+    <script src="js/motorista.js?v=20260612"></script>
+</body>
+</html>

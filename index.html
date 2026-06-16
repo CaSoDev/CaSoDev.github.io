@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jangadeiro - Checklist de Veículos</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#1e3a8a">
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS (CDN para dev, será feito cache no SW) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#1e40af', // blue-800
+                        secondary: '#3b82f6', // blue-500
+                        accent: '#f59e0b', // amber-500
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css?v=20260612">
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans h-screen flex items-center justify-center">
+
+    <!-- Login View -->
+    <div id="login-view"
+        class="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl transform transition-all duration-300">
+        <div class="text-center mb-8">
+            <!-- Placeholder para Logo -->
+            <img src="img/logo.png" alt="Jangadeiro" class="h-24 w-auto mx-auto mb-4">
+            <h1 class="text-3xl font-bold text-gray-900">Vistoria de Frota</h1>
+        </div>
+
+        <form id="login-form" class="space-y-6">
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700">E-mail</label>
+                <div class="mt-1">
+                    <input id="email" name="email" type="email" required
+                        class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary transition duration-150 ease-in-out sm:text-sm"
+                        placeholder="seu@email.com">
+                </div>
+            </div>
+
+            <div>
+                <label for="senha" class="block text-sm font-medium text-gray-700">Senha</label>
+                <div class="mt-1 relative">
+                    <input id="senha" name="senha" type="password" required
+                        class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary transition duration-150 ease-in-out sm:text-sm"
+                        placeholder="••••••••">
+                </div>
+            </div>
+
+            <div id="login-error" class="hidden text-sm text-red-600 bg-red-50 p-3 rounded-md"></div>
+
+            <div>
+                <button type="submit"
+                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200">
+                    Entrar no Sistema
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/api.js?v=20260612"></script>
+    <script src="js/app.js?v=20260612"></script>
+</body>
+
+</html>
